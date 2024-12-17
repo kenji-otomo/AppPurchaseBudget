@@ -6,15 +6,17 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/kenji-otomo/AppPurchaseBudget/usecase"
 )
 
 // ルーティング
 func Route(r *chi.Mux) {
 
-	r.Get("/", usecase.HelloWorld)
-	r.Get("/game", getApps)
-	r.Post("/game", createApp)
+	r.Get("/app", getApps)
+	r.Post("/app", createApp)
+	r.Post("/app/check", checkDuplicateApp)
+
+	r.Get("/history", getHistories)
+	r.Post("/history", createHitory)
 }
 
 func writeResponse(w http.ResponseWriter, arg any) {

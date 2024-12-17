@@ -1,12 +1,15 @@
-package domain
+package app
 
-import "time"
+import (
+	"time"
+)
 
 type app struct {
-	id        *int64
-	name      string
-	createdAt *time.Time
-	updatedAt *time.Time
+	id             *int64
+	name           string
+	lastPurchaseAt *time.Time
+	createdAt      *time.Time
+	updatedAt      *time.Time
 }
 
 func NewApp(name string) *app {
@@ -15,11 +18,12 @@ func NewApp(name string) *app {
 	}
 }
 
-func FromApp(id *int64, name string, createdAt, updatedAt *time.Time) *app {
+func FromApp(id *int64, name string, lastPurchaseAt, createdAt, updatedAt *time.Time) *app {
 	return &app{
-		id:        id,
-		name:      name,
-		createdAt: createdAt,
-		updatedAt: updatedAt,
+		id:             id,
+		name:           name,
+		lastPurchaseAt: lastPurchaseAt,
+		createdAt:      createdAt,
+		updatedAt:      updatedAt,
 	}
 }
