@@ -33,6 +33,15 @@ func ListPurchaseHistories() ([]*PurchaseHistory, error) {
 	return results, err
 }
 
+func FetchTotalPurchaseAmount(start, end time.Time) (*int64, error) {
+	var totalAmount *int64
+	err := db.Select("SUM(amount)").
+		Table("purchase_histories").
+		Where("created_at BETWEEN ? AND ?", start, end).Scan(&totalAmount).Error
+
+	return totalAmount, err
+}
+
 func (p *PurchaseHistory) Create(tx *gorm.DB) error {
 	return tx.Create(&p).Error
 }

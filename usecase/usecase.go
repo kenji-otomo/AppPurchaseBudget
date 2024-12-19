@@ -1,6 +1,9 @@
 package usecase
 
 import (
+	"time"
+
+	"github.com/kenji-otomo/AppPurchaseBudget/domain/app"
 	"github.com/kenji-otomo/AppPurchaseBudget/domain/history"
 	"github.com/kenji-otomo/AppPurchaseBudget/repository"
 	"gorm.io/gorm"
@@ -8,9 +11,22 @@ import (
 
 func GetApps() ([]*repository.App, error) {
 
-	results, err := repository.GetApps()
+	now := time.Now()
+	year, month, _ := now.Date()
 
-	return results, err
+	// 月初
+	firstDay := time.Date(year, month, 1, 0, 0, 0, 0, time.Local)
+	// 月末
+	lastDay := firstDay.AddDate(0, 1, 0).Add(-1 * time.Second)
+
+	results, err := repository.GetAppsOrderByAmount(firstDay, lastDay)
+
+	r := []*repository.App{}
+	for _, v := range results {
+		r = append(r, &v.App)
+	}
+
+	return r, err
 }
 
 func CheckDuplicateApp(name string) (*repository.App, error) {
@@ -28,7 +44,7 @@ func CheckDuplicateApp(name string) (*repository.App, error) {
 	return app, err
 }
 
-func CreateApp(name string) error {
+func CreateApp(name string) (*repository.App, error) {
 
 	app := &repository.App{
 		Name: name,
@@ -38,7 +54,27 @@ func CreateApp(name string) error {
 
 	if err := app.Create(tx); err != nil {
 		tx.Rollback()
-		return err
+		return nil, err
+	}
+
+	tx.Commit()
+	return app, nil
+}
+
+func UpdateAppName(reqs []*app.UpdateAppRequest) error {
+
+	tx := repository.BeginTransaction()
+
+	for _, req := range reqs {
+		rApp := repository.App{
+			ID:   req.ID,
+			Name: req.Name,
+		}
+
+		if err := rApp.UpdateName(tx); err != nil {
+			tx.Rollback()
+			return err
+		}
 	}
 
 	tx.Commit()
@@ -70,4 +106,47 @@ func CreateHitory(h history.HistoryRequest) error {
 	tx.Commit()
 
 	return nil
+}
+
+func FetchHistoryData() ([]*repository.AppWithSum, error) {
+
+	now := time.Now()
+	year, month, _ := now.Date()
+
+	// 月初
+	firstDay := time.Date(year, month, 1, 0, 0, 0, 0, time.Local)
+	// 月末
+	lastDay := firstDay.AddDate(0, 1, 0).Add(-1 * time.Second)
+
+	data, err := repository.FetchPurchaseData(firstDay, lastDay)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
+func FetchBudgetByType(t int64) (*repository.Budget, error) {
+	bt := repository.BudgetType(t)
+	budget, err := repository.FetchBudgetByType(bt)
+	if err != nil {
+		return nil, err
+	}
+
+	now := time.Now()
+	year, month, _ := now.Date()
+
+	// 月初
+	firstDay := time.Date(year, month, 1, 0, 0, 0, 0, time.Local)
+	// 月末
+	lastDay := firstDay.AddDate(0, 1, 0).Add(-1 * time.Second)
+
+	totalAmount, err := repository.FetchTotalPurchaseAmount(firstDay, lastDay)
+	if err != nil {
+		return nil, err
+	}
+
+	budget.Amount -= *totalAmount
+
+	return budget, err
 }

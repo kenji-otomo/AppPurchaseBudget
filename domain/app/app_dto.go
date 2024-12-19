@@ -7,13 +7,21 @@ import (
 )
 
 type AppDTO struct {
-	ID             *int64
-	Name           string
-	LastPurchaseAt time.Time
+	ID             *int64    `json:"id"`
+	Name           string    `json:"name"`
+	LastPurchaseAt time.Time `json:"last_purchase_at"`
+}
+
+func NewAppDTO(appa *repository.App) *AppDTO {
+	return &AppDTO{
+		ID:             appa.ID,
+		Name:           appa.Name,
+		LastPurchaseAt: appa.LastPurchaseAt,
+	}
 }
 
 type CheckDuplicateAppResult struct {
-	IsDuplicate bool
+	IsDuplicate bool `json:"is_duplicate"`
 	*AppDTO
 }
 
@@ -31,5 +39,21 @@ func NewCheckDuplicateAppResult(appa *repository.App) *CheckDuplicateAppResult {
 	return &CheckDuplicateAppResult{
 		IsDuplicate: appa != nil,
 		AppDTO:      appDTO,
+	}
+}
+
+type AppWithSumDTO struct {
+	AppDTO
+	Amount int64 `json:"amount"`
+}
+
+func NewAppWithSumDTO(r *repository.AppWithSum) *AppWithSumDTO {
+	return &AppWithSumDTO{
+		AppDTO: AppDTO{
+			ID:             r.App.ID,
+			Name:           r.App.Name,
+			LastPurchaseAt: r.App.LastPurchaseAt,
+		},
+		Amount: r.Amount,
 	}
 }

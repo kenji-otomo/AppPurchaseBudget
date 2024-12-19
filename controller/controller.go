@@ -14,9 +14,13 @@ func Route(r *chi.Mux) {
 	r.Get("/app", getApps)
 	r.Post("/app", createApp)
 	r.Post("/app/check", checkDuplicateApp)
+	r.Patch("/app", updateApp)
+	r.Get("/app/history", fetchAppHistory)
 
 	r.Get("/history", getHistories)
 	r.Post("/history", createHitory)
+
+	r.Get("/budget/{type}", fetchBudgetByType)
 }
 
 func writeResponse(w http.ResponseWriter, arg any) {
