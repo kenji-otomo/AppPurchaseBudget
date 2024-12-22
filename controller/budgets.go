@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/kenji-otomo/AppPurchaseBudget/domain/budget"
 	"github.com/kenji-otomo/AppPurchaseBudget/usecase"
 )
 
@@ -23,5 +24,5 @@ func fetchBudgetByType(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(err)
 	}
 
-	writeResponse(w, b)
+	writeResponse(w, budget.NewBudgetDTO(b))
 }

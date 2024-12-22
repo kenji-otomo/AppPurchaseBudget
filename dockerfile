@@ -1,5 +1,13 @@
 FROM golang:1.23.4-alpine
 
+# build-arg で渡された環境変数を使って動作をカスタマイズ
+ARG DNS
+ARG VUE_URL
+
+# 環境変数をコンテナ内に設定
+ENV DNS=$DNS
+ENV VUE_URL=$VUE_URL
+
 # 作業ディレクトリを設定
 WORKDIR /app
 

@@ -146,7 +146,9 @@ func FetchBudgetByType(t int64) (*repository.Budget, error) {
 		return nil, err
 	}
 
-	budget.Amount -= *totalAmount
+	if totalAmount != nil {
+		budget.Amount -= *totalAmount
+	}
 
 	return budget, err
 }

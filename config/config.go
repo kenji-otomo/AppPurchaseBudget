@@ -5,7 +5,8 @@ import (
 )
 
 type config struct {
-	Dns string `env:"DNS"`
+	Dns    string `env:"DNS"`
+	VueURL string `env:"VUE_URL"`
 }
 
 var cfg config
