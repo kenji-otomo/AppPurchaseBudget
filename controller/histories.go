@@ -3,9 +3,9 @@ package controller
 import (
 	"encoding/json"
 	"io"
-	"log"
 	"net/http"
 
+	"github.com/kenji-otomo/AppPurchaseBudget/domain/errorArg"
 	"github.com/kenji-otomo/AppPurchaseBudget/domain/history"
 	"github.com/kenji-otomo/AppPurchaseBudget/usecase"
 )
@@ -13,10 +13,15 @@ import (
 func getHistories(w http.ResponseWriter, r *http.Request) {
 	results, err := usecase.GetHistories()
 	if err != nil {
-		log.Fatal(err)
+		writeError(w, http.StatusInternalServerError, errorArg.NewError(err.Error()))
 	}
 
-	writeResponse(w, results)
+	dtos := []*history.HistoryWithNameDTO{}
+	for _, result := range results {
+		dtos = append(dtos, history.NewHistoryWithNameDTO(result))
+	}
+
+	writeResponse(w, dtos)
 }
 
 func createHitory(w http.ResponseWriter, r *http.Request) {
@@ -28,6 +33,8 @@ func createHitory(w http.ResponseWriter, r *http.Request) {
 	json.Unmarshal(body, &req)
 
 	if err := usecase.CreateHitory(req); err != nil {
-		log.Fatal(err)
+		writeError(w, http.StatusInternalServerError, errorArg.NewError(err.Error()))
 	}
+
+	writeStatus(w, http.StatusCreated)
 }

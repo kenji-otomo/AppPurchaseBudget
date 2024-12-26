@@ -4,34 +4,32 @@ import (
 	"time"
 
 	"github.com/kenji-otomo/AppPurchaseBudget/domain/app"
+	"github.com/kenji-otomo/AppPurchaseBudget/domain/budget"
 	"github.com/kenji-otomo/AppPurchaseBudget/domain/history"
 	"github.com/kenji-otomo/AppPurchaseBudget/repository"
 	"gorm.io/gorm"
 )
 
-func GetApps() ([]*repository.App, error) {
+// 課金対象一覧取得（課金登録画面にて使用）
+func GetApps() ([]*app.App, error) {
 
 	now := time.Now()
-	year, month, _ := now.Date()
-
-	// 月初
-	firstDay := time.Date(year, month, 1, 0, 0, 0, 0, time.Local)
-	// 月末
-	lastDay := firstDay.AddDate(0, 1, 0).Add(-1 * time.Second)
+	firstDay, lastDay := generateDataRangeForShowApp(now)
 
 	results, err := repository.GetAppsOrderByAmount(firstDay, lastDay)
 
-	r := []*repository.App{}
+	r := []*app.App{}
 	for _, v := range results {
-		r = append(r, &v.App)
+		r = append(r, app.NewApp(v.ID, v.Name, &v.LastPurchaseAt))
 	}
 
 	return r, err
 }
 
-func CheckDuplicateApp(name string) (*repository.App, error) {
+// 課金名が重複していないかチェック
+func CheckDuplicateApp(name string) (*app.App, error) {
 
-	app, err := repository.FetchAppByName(name)
+	rApp, err := repository.FetchAppByName(name)
 	if err != nil {
 
 		if err == gorm.ErrRecordNotFound {
@@ -41,26 +39,29 @@ func CheckDuplicateApp(name string) (*repository.App, error) {
 		return nil, err
 	}
 
-	return app, err
+	return app.NewApp(rApp.ID, rApp.Name, &rApp.LastPurchaseAt), err
 }
 
-func CreateApp(name string) (*repository.App, error) {
+// 課金対象登録
+func CreateApp(name string) (*app.App, error) {
 
-	app := &repository.App{
+	rApp := &repository.App{
 		Name: name,
 	}
 
 	tx := repository.BeginTransaction()
 
-	if err := app.Create(tx); err != nil {
+	if err := rApp.Create(tx); err != nil {
 		tx.Rollback()
 		return nil, err
 	}
 
 	tx.Commit()
-	return app, nil
+
+	return app.NewApp(rApp.ID, rApp.Name, &rApp.LastPurchaseAt), nil
 }
 
+// 課金対象の名称変更
 func UpdateAppName(reqs []*app.UpdateAppRequest) error {
 
 	tx := repository.BeginTransaction()
@@ -81,16 +82,27 @@ func UpdateAppName(reqs []*app.UpdateAppRequest) error {
 	return nil
 }
 
-func GetHistories() ([]*repository.PurchaseHistory, error) {
-	results, err := repository.ListPurchaseHistories()
+// 課金明細の一覧取得
+func GetHistories() ([]*history.History, error) {
 
-	return results, err
+	now := time.Now()
+	firstDay, lastDay := generateDataRangeForShowApp(now)
+
+	results, err := repository.ListPurchaseHistories(firstDay, lastDay)
+
+	histories := []*history.History{}
+	for _, r := range results {
+		histories = append(histories, history.NewHistory(r.ID, r.AppID, r.Amount, r.PurchaseDate, &r.Name))
+	}
+
+	return histories, err
 }
 
+// 課金明細登録
 func CreateHitory(h history.HistoryRequest) error {
 
 	// エンティティに変換
-	his := history.NewHistory(h.AppID, h.Amount, h.PurchaseDate)
+	his := history.NewHistory(nil, h.AppID, h.Amount, h.PurchaseDate, nil)
 
 	// DB用に変換
 	hisRep := repository.NewPurchaseHistory(his)
@@ -108,38 +120,35 @@ func CreateHitory(h history.HistoryRequest) error {
 	return nil
 }
 
-func FetchHistoryData() ([]*repository.AppWithSum, error) {
+// 1ヶ月間の課金明細を取得
+func FetchHistoryData() ([]*app.AppWithSum, error) {
 
 	now := time.Now()
-	year, month, _ := now.Date()
-
-	// 月初
-	firstDay := time.Date(year, month, 1, 0, 0, 0, 0, time.Local)
-	// 月末
-	lastDay := firstDay.AddDate(0, 1, 0).Add(-1 * time.Second)
+	firstDay, lastDay := generateDataRange(now)
 
 	data, err := repository.FetchPurchaseData(firstDay, lastDay)
 	if err != nil {
 		return nil, err
 	}
 
-	return data, nil
+	results := []*app.AppWithSum{}
+	for _, d := range data {
+		results = append(results, app.NewAppWithSum(app.NewApp(d.App.ID, d.App.Name, &d.App.LastPurchaseAt), d.Amount))
+	}
+
+	return results, nil
 }
 
-func FetchBudgetByType(t int64) (*repository.Budget, error) {
-	bt := repository.BudgetType(t)
-	budget, err := repository.FetchBudgetByType(bt)
+// タイプを指定して課金設定額情報の取得
+func FetchBudgetByType(t int64) (*budget.Budget, error) {
+	bt := budget.BudgetType(t)
+	rBudget, err := repository.FetchBudgetByType(bt)
 	if err != nil {
 		return nil, err
 	}
 
 	now := time.Now()
-	year, month, _ := now.Date()
-
-	// 月初
-	firstDay := time.Date(year, month, 1, 0, 0, 0, 0, time.Local)
-	// 月末
-	lastDay := firstDay.AddDate(0, 1, 0).Add(-1 * time.Second)
+	firstDay, lastDay := generateDataRange(now)
 
 	totalAmount, err := repository.FetchTotalPurchaseAmount(firstDay, lastDay)
 	if err != nil {
@@ -147,8 +156,8 @@ func FetchBudgetByType(t int64) (*repository.Budget, error) {
 	}
 
 	if totalAmount != nil {
-		budget.Amount -= *totalAmount
+		rBudget.Amount -= *totalAmount
 	}
 
-	return budget, err
+	return budget.NewBudget(rBudget.ID, rBudget.Type, rBudget.Amount), nil
 }

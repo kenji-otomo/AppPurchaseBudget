@@ -2,21 +2,19 @@ package app
 
 import (
 	"time"
-
-	"github.com/kenji-otomo/AppPurchaseBudget/repository"
 )
 
 type AppDTO struct {
-	ID             *int64    `json:"id"`
-	Name           string    `json:"name"`
-	LastPurchaseAt time.Time `json:"last_purchase_at"`
+	ID             *int64     `json:"id"`
+	Name           string     `json:"name"`
+	LastPurchaseAt *time.Time `json:"last_purchase_at"`
 }
 
-func NewAppDTO(appa *repository.App) *AppDTO {
+func NewAppDTO(app *App) *AppDTO {
 	return &AppDTO{
-		ID:             appa.ID,
-		Name:           appa.Name,
-		LastPurchaseAt: appa.LastPurchaseAt,
+		ID:             app.id,
+		Name:           app.name,
+		LastPurchaseAt: app.lastPurchaseAt,
 	}
 }
 
@@ -25,19 +23,19 @@ type CheckDuplicateAppResult struct {
 	*AppDTO
 }
 
-func NewCheckDuplicateAppResult(appa *repository.App) *CheckDuplicateAppResult {
+func NewCheckDuplicateAppResult(app *App) *CheckDuplicateAppResult {
 
 	var appDTO *AppDTO
-	if appa != nil {
+	if app != nil {
 		appDTO = &AppDTO{
-			ID:             appa.ID,
-			Name:           appa.Name,
-			LastPurchaseAt: appa.LastPurchaseAt,
+			ID:             app.id,
+			Name:           app.name,
+			LastPurchaseAt: app.lastPurchaseAt,
 		}
 	}
 
 	return &CheckDuplicateAppResult{
-		IsDuplicate: appa != nil,
+		IsDuplicate: app != nil,
 		AppDTO:      appDTO,
 	}
 }
@@ -47,13 +45,13 @@ type AppWithSumDTO struct {
 	Amount int64 `json:"amount"`
 }
 
-func NewAppWithSumDTO(r *repository.AppWithSum) *AppWithSumDTO {
+func NewAppWithSumDTO(a *AppWithSum) *AppWithSumDTO {
 	return &AppWithSumDTO{
 		AppDTO: AppDTO{
-			ID:             r.App.ID,
-			Name:           r.App.Name,
-			LastPurchaseAt: r.App.LastPurchaseAt,
+			ID:             a.app.id,
+			Name:           a.app.name,
+			LastPurchaseAt: a.app.lastPurchaseAt,
 		},
-		Amount: r.Amount,
+		Amount: a.amount,
 	}
 }
