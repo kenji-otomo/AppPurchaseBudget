@@ -1,5 +1,9 @@
 FROM golang:1.23.4-alpine
 
+# Gitインストール
+RUN apk update && \
+    apk add --no-cache git
+
 # build-arg で渡された環境変数を使って動作をカスタマイズ
 ARG DNS
 ARG VUE_URL
